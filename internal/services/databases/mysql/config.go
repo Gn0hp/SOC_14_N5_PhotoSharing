@@ -3,11 +3,11 @@ package mysql
 import "fmt"
 
 type MySqlConfig struct {
-	Host     string
-	Port     string
-	User     string
-	Password string
-	Name     string
+	Host     string `mapstructure:"host"`
+	Port     string `mapstructure:"port"`
+	User     string `mapstructure:"user"`
+	Password string `mapstructure:"password"`
+	Name     string `mapstructure:"name"`
 
 	Params map[string]string
 }

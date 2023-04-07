@@ -2,15 +2,10 @@
 host="localhost"
 port=3306
 user=""
-password=""
+pass=""
 name=""
 
 [server]
 port=8900
 key="key"
 mode="dev"
-
-[log]
-format="json"
-level="info"
-noColor="no_color"

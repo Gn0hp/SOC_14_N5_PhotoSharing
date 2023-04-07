@@ -1,39 +1,25 @@
-FROM golang:1.18-alpine as build
-WORKDIR /build
+FROM golang:1.19-alpine as build
+WORKDIR /go/src
 
-ARG VERSION
-ARG COMMIT_HASH
-ARG BUILD_DATE
 
 # add some necessary packages
 RUN apk update && \
-    apk add libc-dev && \
-    apk add gcc && \
-    apk add make
+    apk add make && \
+    apk add alpine-sdk git && rm -rf /var/cache/apk/*
 
 # prevent the re-installation of vendors at every change in the source code
 COPY go.mod ./
 COPY go.sum ./
-
 RUN go mod download
+
 
 # Copy and build the app
 COPY . .
-RUN echo "[version]: ${VERSION} | [commit_hash]: ${COMMIT_HASH} | [build_date]: ${BUILD_DATE}"
-
-RUN export VERSION_TO_ENV="${VERSION}" \
-    && export COMMIT_HASH_TO_ENV="${COMMIT_HASH}" \
-    && export BUILD_DATE_TO_ENV="${BUILD_DATE}" \
-    && go build -ldflags "-X main.version=${VERSION_TO_ENV} -X main.commitHash=${COMMIT_HASH_TO_ENV}" -o api ./cmd/serverd
-#RUN go build -o api ./cmd/serverd
-
-FROM golang:1.18-alpine as dist
-WORKDIR /app
-
-COPY --from=build /build/api /app/api
-
-LABEL org.opencontainers.image.source="https://github.com/Gn0hp/flickr-api-server"
-
-RUN mkdir config
-
-CMD mv ./config/conf.toml . && ./api
+RUN cp .env.example .env
+# build .exe file
+RUN go build -o ./app ./
+# run project cmd
+#CMD ["./SOC_N5_14_BTL"]
+EXPOSE 8900
+EXPOSE 8901
+ENTRYPOINT ["./app"]
