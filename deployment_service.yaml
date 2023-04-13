@@ -1,0 +1,17 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: flickr-go-service
+spec:
+  type: NodePort
+  #type: LoadBalancer   -> no need nodePort
+  selector:
+    app: flickr-go-srv
+  ports:
+    - name: http
+      port: 80
+      targetPort: 8900
+      nodePort: 30000
+
+# work but only access by localhost, not public IP (using cloud provider to use)
+# use NodePort or Ingress

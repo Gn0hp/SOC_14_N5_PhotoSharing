@@ -1,0 +1,18 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: flickr-go-srv
+spec:
+  selector:
+    matchLabels:
+      app: flickr-go-srv
+  template:
+    metadata:
+      labels:
+        app: flickr-go-srv
+    spec:
+      containers:
+      - name: flickr-go-srv
+        image: gn0hp/flickr-go-srv:latest
+        ports:
+          - containerPort: 8900

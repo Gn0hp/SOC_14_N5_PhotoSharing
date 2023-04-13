@@ -1,16 +1,14 @@
 package api
 
 import (
-	"SOC_N5_14_BTL/internal/repository"
+	"SOC_N5_14_BTL/internal/repository/flickr_repo"
 	"bytes"
 	"context"
 	"fmt"
 	"github.com/gin-gonic/gin"
 	"github.com/go-session/session/v3"
 	"github.com/sirupsen/logrus"
-	"gopkg.in/masci/flickr.v2"
 	"net/http"
-	"os"
 )
 
 func (s Service) AuthorizeFlickr(c *gin.Context) {
@@ -54,6 +52,7 @@ func (s Service) AuthorizeFlickrCallback(c *gin.Context) {
 	}
 	sess.Set("flickr_access_token", accessToken)
 	sess.Set("flickr_access_secret", accessTokenSecret)
+	GetUserID(c)
 	err = sess.Save()
 	if err != nil {
 		c.String(http.StatusInternalServerError, fmt.Sprintf("Error saving oauthToken to session: %s", err.Error()))
@@ -72,20 +71,7 @@ func (s Service) FlickrUploadImage(c *gin.Context) {
 	}
 	files := form.File["files"]
 
-	sess, _ := session.Start(context.Background(), c.Writer, c.Request)
-
-	reqToken, _ := sess.Get("flickr_request_token")
-	reqTokenSecret, _ := sess.Get("flickr_request_token_secret")
-	accessToken, _ := sess.Get("flickr_access_token")
-	accessTokenSecret, _ := sess.Get("flickr_access_secret")
-
-	client := flickr.NewFlickrClient(reqToken.(string), reqTokenSecret.(string))
-	client.OAuthToken = accessToken.(string)
-	client.OAuthTokenSecret = accessTokenSecret.(string)
-	client.ApiKey = os.Getenv("FLICKR_API_KEY")
-	client.ApiSecret = os.Getenv("FLICKR_API_SECRET")
-
-	flickrRepo := repository.FlickrRepository{Client: client}
+	flickrRepo := flickr_repo.New(c)
 	for _, file := range files {
 		openFiles, err := file.Open()
 		if err != nil {
@@ -109,6 +95,30 @@ func (s Service) FlickrUploadImage(c *gin.Context) {
 	c.String(http.StatusOK, fmt.Sprint("Successfully"))
 }
 
+func (s Service) GetPhotoById(c *gin.Context) {
+	id := c.Param("photo_id")
+	secret := c.Param("photo_secret")
+
+	repo := flickr_repo.New(c)
+	res, err := repo.GetPhotoInfo(id, secret)
+	if err != nil {
+		return
+	}
+	c.JSON(http.StatusOK, res)
+}
+func (s Service) GetPhotoByUserId(c *gin.Context) {
+	repo := flickr_repo.New(c)
+	sess, _ := session.Start(c, c.Writer, c.Request)
+	userID, _ := sess.Get("flickr_user_id")
+	res, err := repo.GetPhotos(userID.(string))
+	if err != nil {
+		return
+	}
+
+	fmt.Printf("photo: %v", res.Extra)
+
+	c.String(http.StatusOK, fmt.Sprintf("response: %v", res))
+}
 func (s Service) TestSession(c *gin.Context) {
 	sess, _ := session.Start(c, c.Writer, c.Request)
 	accessToken, _ := sess.Get("flickr_access_token")

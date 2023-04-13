@@ -1,5 +1,7 @@
 package entities
 
+import "gopkg.in/masci/flickr.v2/photos"
+
 type Photo struct {
-	DefaultModel
+	photos.PhotoInfo
 }

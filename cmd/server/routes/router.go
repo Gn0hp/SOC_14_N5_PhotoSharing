@@ -46,6 +46,21 @@ func Setup() *gin.Engine {
 	//r.Static("/public/static/", "./public/static")
 	r.LoadHTMLGlob("public/*")
 
+	apiEp := r.Group("/api/v1")
+	{
+		photoEp := apiEp.Group("photo")
+		{
+			photoEp.GET("/getById", srv.GetPhotoById) // -> c.Param c.Param
+			photoEp.GET("/getByUserId", srv.GetPhotoByUserId)
+		}
+		photosetEp := apiEp.Group("/photoset")
+		{
+			photosetEp.GET("/get", func(context *gin.Context) {
+
+			})
+
+		}
+	}
 	googleAuth := r.Group("/auth/google")
 	{
 		//redirect to sign in with google page

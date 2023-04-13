@@ -1,10 +1,8 @@
-package repository
+package flickr_repo
 
 import (
 	"github.com/sirupsen/logrus"
 	"gopkg.in/masci/flickr.v2"
-	"gopkg.in/masci/flickr.v2/photosets"
-	"io"
 	"os"
 )
 
@@ -31,22 +29,4 @@ func (f *FlickrRepository) Authen() (*flickr.FlickrClient, string) {
 	client.OAuthToken = accessTok.OAuthToken
 	client.OAuthTokenSecret = accessTok.OAuthTokenSecret
 	return client, url
-}
-
-func (f *FlickrRepository) CreatePhotoset(title, description, primaryPhotoID string) (photosets.PhotosetResponse, error) {
-	response, err := photosets.Create(f.Client, title, description, primaryPhotoID)
-	if err != nil {
-		logrus.Errorf("Error while creating photoset: %v", err)
-		return photosets.PhotosetResponse{}, err
-	}
-	return *response, nil
-}
-
-func (f *FlickrRepository) UploadPhoto(reader io.Reader, name string) (*flickr.UploadResponse, bool) {
-	response, err := flickr.UploadReader(f.Client, reader, name, nil)
-	if err != nil {
-		logrus.Errorf("Error while uploadding photo to Flickr: %v", err)
-		return nil, false
-	}
-	return response, true
 }
