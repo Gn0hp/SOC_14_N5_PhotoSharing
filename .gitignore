@@ -39,7 +39,7 @@
 .idea/
 
 # Config
-*.yml
+#*.yml
 
 # SQL
 *.sql

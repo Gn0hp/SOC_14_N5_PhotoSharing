@@ -1,0 +1,47 @@
+version: '3.7'
+
+services:
+  mysql:
+    container_name: "flickr-service-mysql"
+    image: mysql:8.0.23
+    ports:
+      - "3306:3306"
+    networks:
+      - default
+    restart: always
+    environment:
+      MYSQL_DATABASE: ${DATABASE_NAME}
+      MYSQL_USER: ${DATABASE_USER}
+      MYSQL_PASSWORD: ${DATABASE_PASSWORD}
+      MYSQL_ROOT_PASSWORD: ${DATABASE_ROOT_PASSWORD}
+
+    # we mount a data volume to make sure we don't lose data
+    volumes:
+      - mysql_data:/var/lib/mysql
+    command: --default-authentication-plugin=mysql_native_password
+
+  api:
+    # we want to use the image which is build from our api.Dockerfile
+    # remove container + build, replace with image
+    # image: ghcr.io/Gn0hp/flickr-service-api-server:latest
+    container_name:  "flickr-service-api-server"
+    build:
+      context: .
+      dockerfile: api.Dockerfile
+      target: build
+    expose:
+      - '8900'
+      - '8901'
+    ports:
+      - '8900:8900'
+      - '8901:8901'
+    # Depending on the mysql backend
+#    depends_on:
+#      - mysql
+    volumes:
+      - ./src:/home/go/src
+#      - type: bind
+#        source: $HOST/config
+#        target: /app/config
+    command:
+      - ./app
