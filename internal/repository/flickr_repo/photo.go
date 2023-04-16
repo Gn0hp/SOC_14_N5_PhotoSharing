@@ -1,6 +1,8 @@
 package flickr_repo
 
 import (
+	"SOC_N5_14_BTL/internal/entities"
+	"SOC_N5_14_BTL/pkg/utils"
 	"github.com/sirupsen/logrus"
 	"gopkg.in/masci/flickr.v2"
 	"gopkg.in/masci/flickr.v2/people"
@@ -26,7 +28,7 @@ func (f *FlickrRepository) GetPhotoInfo(id, secret string) (*photos.PhotoInfoRes
 	return response, nil
 }
 
-func (f *FlickrRepository) GetPhotos(userID string) (*people.PhotoListResponse, error) {
+func (f *FlickrRepository) GetPhotos(userID string) (*entities.PhotoListResponse, error) {
 	response, err := people.GetPhotos(f.Client, userID, people.GetPhotosOptionalArgs{
 		SafeSearch:    0,
 		MinUploadDate: "",
@@ -43,5 +45,5 @@ func (f *FlickrRepository) GetPhotos(userID string) (*people.PhotoListResponse, 
 		logrus.Errorf("Error while getting people photo: %v", err)
 		return nil, err
 	}
-	return response, nil
+	return utils.ParsePhotosXmlToPhotoListResponse(response.Extra), nil
 }

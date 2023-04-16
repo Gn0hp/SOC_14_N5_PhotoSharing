@@ -55,9 +55,15 @@ func Setup() *gin.Engine {
 		}
 		photosetEp := apiEp.Group("/photoset")
 		{
-			photosetEp.GET("/get", func(context *gin.Context) {
-
+			photosetEp.GET("/create", func(c *gin.Context) {
+				c.Header("Content-Type", "text/html")
+				c.HTML(http.StatusOK, "createPhotoset.html", gin.H{
+					"ActionPath": "/api/v1/photoset/create",
+				})
 			})
+			photosetEp.POST("/create", srv.CreatePhotoset)
+			photosetEp.POST("/addToPhotoset", srv.AddPhotosToPhotoset)
+			photosetEp.POST("removeFromPhotoset", srv.RemovePhotosFromPhotoset)
 
 		}
 	}

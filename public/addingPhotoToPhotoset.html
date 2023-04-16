@@ -1,0 +1,17 @@
+<!DOCTYPE html>
+<head>
+    <meta charset="utf-8">
+    <title>Create photoset upload</title>
+</head>
+<body>
+    <h1>Create album</h1>
+
+
+    <form method="POST" enctype="multipart/form-data" action="{{.ActionPath}}">
+        <input type=text name="photoset_id">
+        <input type=text name="photo_ids[]">
+        <input type=text name="photo_ids[]">
+        <input type=text name="photo_ids[]">
+    </form>
+</body>
+</html>

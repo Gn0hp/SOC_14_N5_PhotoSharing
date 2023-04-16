@@ -95,16 +95,17 @@ func (s Service) FlickrUploadImage(c *gin.Context) {
 	c.String(http.StatusOK, fmt.Sprint("Successfully"))
 }
 
+//No need
 func (s Service) GetPhotoById(c *gin.Context) {
-	id := c.Param("photo_id")
-	secret := c.Param("photo_secret")
+	id := c.Query("photo_id")
+	secret := c.Query("photo_secret")
 
 	repo := flickr_repo.New(c)
 	res, err := repo.GetPhotoInfo(id, secret)
 	if err != nil {
 		return
 	}
-	c.JSON(http.StatusOK, res)
+	c.JSON(http.StatusOK, res.Photo)
 }
 func (s Service) GetPhotoByUserId(c *gin.Context) {
 	repo := flickr_repo.New(c)
@@ -115,10 +116,50 @@ func (s Service) GetPhotoByUserId(c *gin.Context) {
 		return
 	}
 
-	fmt.Printf("photo: %v", res.Extra)
+	fmt.Printf("photo: %v", res)
 
-	c.String(http.StatusOK, fmt.Sprintf("response: %v", res))
+	c.JSON(http.StatusOK, res)
 }
+
+func (s Service) CreatePhotoset(c *gin.Context) {
+	repo := flickr_repo.New(c)
+	title := c.PostForm("title")
+	description := c.PostForm("description")
+	primaryPhotoId := c.PostForm("primary_photo")
+
+	res, err := repo.CreatePhotoset(title, description, primaryPhotoId)
+	if err != nil {
+		logrus.Errorf("Error creating photoset: %v", err)
+		return
+	}
+	logrus.Info("response: ", res)
+	c.String(http.StatusOK, fmt.Sprint("Successfully create"))
+
+}
+func (s Service) AddPhotosToPhotoset(c *gin.Context) {
+	repo := flickr_repo.New(c)
+	photosetId := c.PostForm("photoset_id")
+	photoIds := c.PostFormArray("photo_ids")
+	ok, err := repo.AddPhotosToPhotoset(photosetId, photoIds)
+	if !ok {
+		c.String(http.StatusBadRequest, fmt.Sprintf("Error while adding photos to photoset, check log for more infomation: %v", err))
+		return
+	}
+	c.String(http.StatusOK, fmt.Sprint("Successfully"))
+
+}
+func (s Service) RemovePhotosFromPhotoset(c *gin.Context) {
+	repo := flickr_repo.New(c)
+	photosetId := c.PostForm("photoset_id")
+	photoIds := c.PostFormArray("photo_ids")
+	ok, err := repo.RemovePhotosFromPhotoset(photosetId, photoIds)
+	if !ok {
+		c.String(http.StatusBadRequest, fmt.Sprintf("Error while removing photos from photoset, check log for more infomation: %v", err))
+		return
+	}
+	c.String(http.StatusOK, fmt.Sprint("Successfully"))
+}
+
 func (s Service) TestSession(c *gin.Context) {
 	sess, _ := session.Start(c, c.Writer, c.Request)
 	accessToken, _ := sess.Get("flickr_access_token")
