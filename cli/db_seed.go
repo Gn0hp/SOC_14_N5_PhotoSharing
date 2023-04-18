@@ -1,4 +1,4 @@
-package main
+package cli
 
 import (
 	"SOC_N5_14_BTL/internal/entities"
@@ -15,13 +15,14 @@ type MigrateService struct {
 	gormDB *gorm.DB
 }
 
-func main() {
+func Migrate() {
 	migrateService := MigrateService{}
 	migrateService.Init()
 
 	tables := []interface{}{
 		entities.Photo{},
 		entities.User{},
+		entities.Photoset{},
 	}
 	err := migrateService.gormDB.AutoMigrate(tables...)
 	if err != nil {

@@ -1,12 +1,11 @@
 package entities
 
-import "gopkg.in/masci/flickr.v2/photos"
-
 type Photo struct {
-	photos.PhotoInfo
+	PhotoResponse
 }
 type PhotoResponse struct {
-	Id       string `xml:"id,attr"`
+	DefaultModelNonId
+	Id       string `xml:"id,attr" gorm:"primarykey"`
 	Owner    string `xml:"owner,attr"`
 	Secret   string `xml:"secret,attr"`
 	Server   string `xml:"server,attr"`

@@ -7,29 +7,10 @@ import (
 )
 
 func NewConnector(config MySqlConfig) (*gorm.DB, error) {
+	config.Params = make(map[string]string)
 	config.Params["parseTime"] = "true"
 	config.Params["rejectReadOnly"] = "true"
-
-	db, err := gorm.Open(mysql.Open(config.DSN()), &gorm.Config{
-		SkipDefaultTransaction:                   false,
-		NamingStrategy:                           nil,
-		FullSaveAssociations:                     false,
-		Logger:                                   nil,
-		NowFunc:                                  nil,
-		DryRun:                                   false,
-		PrepareStmt:                              false,
-		DisableAutomaticPing:                     false,
-		DisableForeignKeyConstraintWhenMigrating: false,
-		IgnoreRelationshipsWhenMigrating:         false,
-		DisableNestedTransaction:                 false,
-		AllowGlobalUpdate:                        false,
-		QueryFields:                              false,
-		CreateBatchSize:                          0,
-		ClauseBuilders:                           nil,
-		ConnPool:                                 nil,
-		Dialector:                                nil,
-		Plugins:                                  nil,
-	})
+	db, err := gorm.Open(mysql.Open(config.DSN()), &gorm.Config{})
 	if err != nil {
 		panic(fmt.Sprintf("Connect database failed, error: %v", err))
 	}

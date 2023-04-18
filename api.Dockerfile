@@ -16,7 +16,7 @@ RUN go mod download
 # Copy and build the app
 COPY . .
 RUN cp .env.example .env
-# build .exe file
+
 RUN go build -o ./app ./
 # run project cmd
 #CMD ["./SOC_N5_14_BTL"]

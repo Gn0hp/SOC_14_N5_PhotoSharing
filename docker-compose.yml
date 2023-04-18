@@ -36,8 +36,8 @@ services:
       - '8900:8900'
       - '8901:8901'
     # Depending on the mysql backend
-#    depends_on:
-#      - mysql
+    depends_on:
+      - mysql
     volumes:
       - ./src:/home/go/src
 #      - type: bind
@@ -45,3 +45,7 @@ services:
 #        target: /app/config
     command:
       - ./app
+networks:
+  host:
+volumes:
+  mysql_data:

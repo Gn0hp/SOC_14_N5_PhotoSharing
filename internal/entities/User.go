@@ -5,7 +5,7 @@ type User struct {
 }
 
 type ResponseGoogleUserInfo struct {
-	ID            string `json:"sub"`
+	ID            string `json:"sub" gorm:"primarykey"`
 	Email         string `json:"email"`
 	EmailVerified bool   `json:"email_verified"`
 	FamilyName    string `json:"family_name"`
@@ -13,4 +13,5 @@ type ResponseGoogleUserInfo struct {
 	Locale        string `json:"locale"`
 	Name          string `json:"name"`
 	Picture       string `json:"picture"`
+	DefaultModelNonId
 }
