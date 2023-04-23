@@ -1,9 +1,9 @@
 package api
 
 import (
+	"SOC_N5_14_BTL/internal/entities"
 	"SOC_N5_14_BTL/internal/repository/flickr_repo"
 	"bytes"
-	"context"
 	"fmt"
 	"github.com/gin-gonic/gin"
 	"github.com/go-session/session/v3"
@@ -22,48 +22,88 @@ func (s Service) AuthorizeFlickr(c *gin.Context) {
 		c.String(http.StatusInternalServerError, fmt.Sprintf("Error getting authorizationURL: %s", err.Error()))
 		return
 	}
-	sess, err := session.Start(context.Background(), c.Writer, c.Request)
-	sess.Set("flickr_request_token", requestToken)
-	sess.Set("flickr_request_token_secret", requestTokenSecret)
-	err = sess.Save()
+	//@dev NOTE: Use for PC, not android
+	//sess, err := session.Start(c, c.Writer, c.Request)
+	//sess.Set("flickr_request_token", requestToken)
+	//sess.Set("flickr_request_token_secret", requestTokenSecret)
+	//err = sess.Save()
+
+	//@dev NOTE: Use for android
+	c.SetCookie("gin_cookie_frt", requestToken, 360, "/", "10.0.2.2:8900", false, true)
+	c.SetCookie("gin_cookie_frts", requestTokenSecret, 360, "/", "10.0.2.2:8900", false, true)
 	if err != nil {
 		c.String(http.StatusInternalServerError, fmt.Sprintf("Error saving oauthToken to session: %s", err.Error()))
 		return
 	}
+	fmt.Printf("Go session ID first : %v", c.Request.Header.Get("Cookie"))
 	c.Redirect(http.StatusFound, authorizationUrl.String())
-
 }
 func (s Service) AuthorizeFlickrCallback(c *gin.Context) {
+	//@dev NOTE: Use for PC, not android
+	sess, _ := session.Start(c, c.Writer, c.Request)
+	//reqToken, ok := sess.Get("flickr_request_token")
+	//reqTokenSecret, ok := sess.Get("flickr_request_token_secret")
+	//fmt.Printf("Go session ID second : %v", c.Request.Header.Get("Cookie"))
+	reqToken, err := c.Cookie("gin_cookie_frt")
+	if err != nil {
+		c.String(http.StatusInternalServerError, fmt.Sprintf("Error getting request token from cookie: %v", err))
+		return
+	}
+	reqTokenSecret, err := c.Cookie("gin_cookie_frts")
 
-	sess, _ := session.Start(context.Background(), c.Writer, c.Request)
-	reqToken, ok := sess.Get("flickr_request_token")
-	reqTokenSecret, ok := sess.Get("flickr_request_token_secret")
-
-	if !ok {
-		c.String(http.StatusInternalServerError, fmt.Sprintf("Error getting request token from session: %v", ok))
+	if err != nil {
+		c.String(http.StatusInternalServerError, fmt.Sprintf("Error getting request token secret from cookie: %v", err))
 		return
 	}
 	verifier := c.Query("oauth_verifier")
 	// Exchange code for token
-	accessToken, accessTokenSecret, err := s.OauthConfig.FlickrConfig.AccessToken(reqToken.(string), reqTokenSecret.(string), verifier)
+	accessToken, accessTokenSecret, err := s.OauthConfig.FlickrConfig.AccessToken(reqToken, reqTokenSecret, verifier)
 	if err != nil {
 		c.String(http.StatusInternalServerError, fmt.Sprintf("Error request for access token : %s", err.Error()))
 		return
 	}
+	sess.Set("flickr_request_token", reqToken)
+	sess.Set("flickr_request_token_secret", reqTokenSecret)
 	sess.Set("flickr_access_token", accessToken)
 	sess.Set("flickr_access_secret", accessTokenSecret)
-	GetUserID(c)
+	user := GetUserID(reqToken, reqTokenSecret, accessToken, accessTokenSecret, c)
+
+	//sess.Set("flickr_user_id", userId)
+	c.SetCookie("flickr_user_id", user.ID, 360, "/", "10.0.2.2:8900", false, false)
+	c.SetCookie("flickr_user_username", user.Username, 360, "/", "10.0.2.2:8900", false, false)
+	c.SetCookie("flickr_user_fullname", user.Fullname, 360, "/", "10.0.2.2:8900", false, false)
+	c.SetCookie("flickr_user_id", user.ID, 360, "/", "localhost:8900", false, false)
+	c.SetCookie("flickr_user_username", user.Username, 360, "/", "localhost:8900", false, false)
+	c.SetCookie("flickr_user_fullname", user.Fullname, 360, "/", "localhost:8900", false, false)
 	err = sess.Save()
 	if err != nil {
 		c.String(http.StatusInternalServerError, fmt.Sprintf("Error saving oauthToken to session: %s", err.Error()))
 		return
 	}
-	c.String(http.StatusFound, fmt.Sprintf("Success generate token: %v  --- %v", accessToken, accessTokenSecret))
+	//c.JSON(http.StatusOK, map[string]string{
+	//	"user_id":  user.ID,
+	//	"username": user.Username,
+	//	"fullname": user.Fullname,
+	//})
+	c.Redirect(http.StatusFound, fmt.Sprintf("http://localhost:8900/flickr/redirect-callback?"+
+		"user_id=%s"+
+		"&username=%s"+
+		"&fullname=%s"+
+		"&flickr_request_token=%s"+
+		"&flickr_request_token_secret=%s"+
+		"&flickr_access_token=%s"+
+		"&flickr_access_secret=%s", user.ID, user.Username, user.Fullname, reqToken, reqTokenSecret, accessToken, accessTokenSecret))
+
 }
 
 func (s Service) FlickrUploadImage(c *gin.Context) {
-	name := c.PostForm("name")
-	email := c.PostForm("email")
+	fmt.Println("go here ...")
+	username, _ := c.Cookie("flickr_user_username")
+	id, _ := c.Cookie("flickr_user_id")
+	reqToken, _ := c.Cookie("flickr_request_token")
+	reqTokenSecret, _ := c.Cookie("flickr_request_token_secret")
+	accessToken, _ := c.Cookie("flickr_access_token")
+	accessTokenSecret, _ := c.Cookie("flickr_access_secret")
 
 	form, err := c.MultipartForm()
 	if err != nil {
@@ -71,7 +111,9 @@ func (s Service) FlickrUploadImage(c *gin.Context) {
 	}
 	files := form.File["files"]
 
-	flickrRepo := flickr_repo.New(c)
+	var uploadedPhotoId []string
+
+	flickrRepo := flickr_repo.NewWithCookie(reqToken, reqTokenSecret, accessToken, accessTokenSecret)
 	for _, file := range files {
 		openFiles, err := file.Open()
 		if err != nil {
@@ -85,14 +127,32 @@ func (s Service) FlickrUploadImage(c *gin.Context) {
 		}
 		reader := bytes.NewReader(buf)
 
-		_, ok := flickrRepo.UploadPhoto(reader, name)
+		response, ok := flickrRepo.UploadPhoto(reader, username)
 		if !ok {
 			c.String(http.StatusBadRequest, fmt.Sprint("Error uploading file"))
 			return
 		}
+		uploadedPhotoId = append(uploadedPhotoId, response.ID)
 	}
-	logrus.Info(" -------------------", name, email)
-	c.String(http.StatusOK, fmt.Sprint("Successfully"))
+	resp, err := flickrRepo.GetPhotos(id)
+	var res []entities.PhotoResponse
+	for _, photo := range resp.Photo {
+		if contain(uploadedPhotoId, photo.Id) {
+			res = append(res, photo)
+		}
+	}
+	c.JSON(http.StatusOK, res)
+}
+func contain(arr []string, element string) bool {
+	for _, val := range arr {
+		if val == element {
+			return true
+		}
+	}
+	return false
+}
+func (s Service) UploadPost(c *gin.Context) {
+
 }
 
 //No need

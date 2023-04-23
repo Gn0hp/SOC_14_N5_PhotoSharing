@@ -8,6 +8,7 @@ import (
 	"encoding/pem"
 	"fmt"
 	"github.com/gin-gonic/gin"
+	"github.com/sirupsen/logrus"
 	"io/ioutil"
 	"log"
 	"net/http"
@@ -45,12 +46,17 @@ func Setup() *gin.Engine {
 	}()
 	//r.Static("/public/static/", "./public/static")
 	r.LoadHTMLGlob("public/*")
-
+	post := r.Group("/post")
+	{
+		// TODO: check same cookie from client
+		// send post form (image files) -> return flickr photos response
+		post.POST("/create-post", srv.UploadPost)
+	}
 	apiEp := r.Group("/api/v1")
 	{
 		photoEp := apiEp.Group("photo")
 		{
-			photoEp.GET("/getById", srv.GetPhotoById) // -> c.Param c.Param
+			photoEp.GET("/getById", srv.GetPhotoById) // -> c.Param
 			photoEp.GET("/getByUserId", srv.GetPhotoByUserId)
 		}
 		photosetEp := apiEp.Group("/photoset")
@@ -76,6 +82,12 @@ func Setup() *gin.Engine {
 		googleAuth.GET("/logout", srv.GoogleLogout)
 	}
 	r.GET("/", func(c *gin.Context) {
+		cookie, err := c.Cookie("flickr_user_id")
+		if err != nil {
+			logrus.Errorf("Error Cookie: %v", err)
+			return
+		}
+		fmt.Printf("----Cookie---- : %v", cookie)
 		c.String(http.StatusAccepted, fmt.Sprint("Welcome"))
 	})
 	flickrAuth := r.Group("/flickr")

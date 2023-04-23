@@ -15,3 +15,9 @@ type ResponseGoogleUserInfo struct {
 	Picture       string `json:"picture"`
 	DefaultModelNonId
 }
+
+type FlickrUserResponse struct {
+	ID       string
+	Username string
+	Fullname string
+}
