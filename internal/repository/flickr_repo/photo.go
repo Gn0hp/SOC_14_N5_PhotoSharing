@@ -28,6 +28,14 @@ func (f *FlickrRepository) GetPhotoInfo(id, secret string) (*photos.PhotoInfoRes
 	return response, nil
 }
 
+func (f *FlickrRepository) GetPhotoURLs(id string) (*photos.PhotoAccessInfo, error) {
+	response, err := photos.GetSizes(f.Client, id)
+	if err != nil {
+		logrus.Errorf("Error while getting photo size url: %v", err)
+		return nil, err
+	}
+	return response, nil
+}
 func (f *FlickrRepository) GetPhotos(userID string) (*entities.PhotoListResponse, error) {
 	response, err := people.GetPhotos(f.Client, userID, people.GetPhotosOptionalArgs{
 		SafeSearch:    0,

@@ -31,6 +31,8 @@ func (s Service) AuthorizeFlickr(c *gin.Context) {
 	//@dev NOTE: Use for android
 	c.SetCookie("gin_cookie_frt", requestToken, 360, "/", "10.0.2.2:8900", false, true)
 	c.SetCookie("gin_cookie_frts", requestTokenSecret, 360, "/", "10.0.2.2:8900", false, true)
+	c.SetCookie("gin_cookie_frt", requestToken, 360, "/", "localhost:8900", false, true)
+	c.SetCookie("gin_cookie_frts", requestTokenSecret, 360, "/", "localhost:8900", false, true)
 	if err != nil {
 		c.String(http.StatusInternalServerError, fmt.Sprintf("Error saving oauthToken to session: %s", err.Error()))
 		return
@@ -75,6 +77,16 @@ func (s Service) AuthorizeFlickrCallback(c *gin.Context) {
 	c.SetCookie("flickr_user_id", user.ID, 360, "/", "localhost:8900", false, false)
 	c.SetCookie("flickr_user_username", user.Username, 360, "/", "localhost:8900", false, false)
 	c.SetCookie("flickr_user_fullname", user.Fullname, 360, "/", "localhost:8900", false, false)
+
+	c.SetCookie("flickr_request_token", reqToken, 360, "/", "localhost:8900", false, false)
+	c.SetCookie("flickr_request_token_secret", reqTokenSecret, 360, "/", "localhost:8900", false, false)
+	c.SetCookie("flickr_access_token", accessToken, 360, "/", "localhost:8900", false, false)
+	c.SetCookie("flickr_access_secret", accessTokenSecret, 360, "/", "localhost:8900", false, false)
+
+	c.SetCookie("flickr_request_token", reqToken, 360, "/", "10.0.2.2:8900", false, false)
+	c.SetCookie("flickr_request_token_secret", reqTokenSecret, 360, "/", "10.0.2.2:8900", false, false)
+	c.SetCookie("flickr_access_token", accessToken, 360, "/", "10.0.2.2:8900", false, false)
+	c.SetCookie("flickr_access_secret", accessTokenSecret, 360, "/", "10.0.2.2:8900", false, false)
 	err = sess.Save()
 	if err != nil {
 		c.String(http.StatusInternalServerError, fmt.Sprintf("Error saving oauthToken to session: %s", err.Error()))
@@ -135,13 +147,19 @@ func (s Service) FlickrUploadImage(c *gin.Context) {
 		uploadedPhotoId = append(uploadedPhotoId, response.ID)
 	}
 	resp, err := flickrRepo.GetPhotos(id)
-	var res []entities.PhotoResponse
+	type IdJson struct {
+		Id string `json:"id"`
+	}
+	var res []IdJson
 	for _, photo := range resp.Photo {
 		if contain(uploadedPhotoId, photo.Id) {
-			res = append(res, photo)
+			newId := IdJson{
+				Id: photo.Id,
+			}
+			res = append(res, newId)
 		}
 	}
-	c.JSON(http.StatusOK, res)
+	c.JSON(http.StatusOK, gin.H{"response": &res})
 }
 func contain(arr []string, element string) bool {
 	for _, val := range arr {
@@ -158,14 +176,28 @@ func (s Service) UploadPost(c *gin.Context) {
 //No need
 func (s Service) GetPhotoById(c *gin.Context) {
 	id := c.Query("photo_id")
-	secret := c.Query("photo_secret")
 
 	repo := flickr_repo.New(c)
-	res, err := repo.GetPhotoInfo(id, secret)
+	//res, err := repo.GetPhotoInfo(id, secret)
+	res, err := repo.GetPhotoURLs(id)
 	if err != nil {
 		return
 	}
-	c.JSON(http.StatusOK, res.Photo)
+	type PhotoAccessArr struct {
+		Response []entities.PhotoURLResponse `json:"Response"`
+	}
+	var resJson PhotoAccessArr
+	for _, photo := range res.Sizes {
+		resJson.Response = append(resJson.Response, entities.PhotoURLResponse{
+			Label:  photo.Label,
+			Width:  photo.Width,
+			Height: photo.Height,
+			Source: photo.Source,
+			Url:    photo.Url,
+			Media:  photo.Media,
+		})
+	}
+	c.JSON(http.StatusOK, resJson)
 }
 func (s Service) GetPhotoByUserId(c *gin.Context) {
 	repo := flickr_repo.New(c)

@@ -8,7 +8,6 @@ import (
 	"encoding/pem"
 	"fmt"
 	"github.com/gin-gonic/gin"
-	"github.com/sirupsen/logrus"
 	"io/ioutil"
 	"log"
 	"net/http"
@@ -81,15 +80,7 @@ func Setup() *gin.Engine {
 		googleAuth.GET("/callback", srv.GoogleSigninCallback)
 		googleAuth.GET("/logout", srv.GoogleLogout)
 	}
-	r.GET("/", func(c *gin.Context) {
-		cookie, err := c.Cookie("flickr_user_id")
-		if err != nil {
-			logrus.Errorf("Error Cookie: %v", err)
-			return
-		}
-		fmt.Printf("----Cookie---- : %v", cookie)
-		c.String(http.StatusAccepted, fmt.Sprint("Welcome"))
-	})
+
 	flickrAuth := r.Group("/flickr")
 	{
 		flickrAuth.GET("/callbackAuth", srv.AuthorizeFlickrCallback)
@@ -103,6 +94,11 @@ func Setup() *gin.Engine {
 		})
 		flickrAuth.POST("/upload_img", srv.FlickrUploadImage)
 	}
+
+	r.GET("/", func(c *gin.Context) {
+		c.String(http.StatusAccepted, fmt.Sprint("Welcome"))
+
+	})
 
 	return r
 }
