@@ -23,7 +23,14 @@ func (f *FlickrRepository) GetPhotoSets(userId string, page int) (*photosets.Pho
 	}
 	return response, nil
 }
-
+func (f *FlickrRepository) GetPhotoByPhotoset(photosetId string, userId string) (*photosets.PhotosListResponse, error) {
+	response, err := photosets.GetPhotos(f.Client, false, photosetId, userId, 1)
+	if err != nil {
+		logrus.Errorf("Error while getting photos from PhotosetId and UserId: %v", err)
+		return nil, err
+	}
+	return response, nil
+}
 func (f *FlickrRepository) AddPhotosToPhotoset(photosetId string, photoIds []string) (bool, error) {
 	for index, photoId := range photoIds {
 		ok, err := addPhotoToPhotoset(f.Client, photosetId, photoId, index)
