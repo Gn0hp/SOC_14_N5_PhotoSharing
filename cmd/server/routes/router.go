@@ -56,6 +56,7 @@ func Setup() *gin.Engine {
 		photoEp := apiEp.Group("photo")
 		{
 			photoEp.GET("/getById", srv.GetPhotoById) // -> c.Param
+			//photoEp.GET("/getUrlById", srv.GetPhotoUrlById) // -> c.Param
 			photoEp.GET("/getByUserId", srv.GetPhotoByUserId)
 		}
 		photosetEp := apiEp.Group("/photoset")

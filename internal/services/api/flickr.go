@@ -1,13 +1,16 @@
 package api
 
 import (
+	"SOC_N5_14_BTL/cli"
 	"SOC_N5_14_BTL/internal/entities"
 	"SOC_N5_14_BTL/internal/repository/flickr_repo"
 	"bytes"
+	"context"
 	"fmt"
 	"github.com/gin-gonic/gin"
 	"github.com/go-session/session/v3"
 	"github.com/sirupsen/logrus"
+	"gorm.io/gorm"
 	"net/http"
 )
 
@@ -151,13 +154,24 @@ func (s Service) FlickrUploadImage(c *gin.Context) {
 		Id string `json:"id"`
 	}
 	var res []IdJson
+	var saveDbInBatch []entities.PhotoIdUrlMapping
+	//db := GetDB()
 	for _, photo := range resp.Photo {
 		if contain(uploadedPhotoId, photo.Id) {
 			newId := IdJson{
 				Id: photo.Id,
 			}
+			entitiesSaveDb := entities.PhotoIdUrlMapping{
+				ImgId: photo.Id,
+				Url:   photo.UrlO,
+			}
+			saveDbInBatch = append(saveDbInBatch, entitiesSaveDb)
 			res = append(res, newId)
 		}
+		//err := db.CreateInBatches(saveDbInBatch, 10)
+		//if err != nil {
+		//	logrus.Errorf("Error while saving image url to database : %v", err)
+		//}
 	}
 	c.JSON(http.StatusOK, gin.H{"response": &res})
 }
@@ -172,6 +186,20 @@ func contain(arr []string, element string) bool {
 func (s Service) UploadPost(c *gin.Context) {
 
 }
+
+//func (s Service) GetPhotoUrlById(c *gin.Context) {
+//	id := c.Query("photo_id")
+//	var photoUrl entities.PhotoIdUrlMapping
+//	db := GetDB()
+//	err := db.Where("img_id = ?", id).First(&photoUrl)
+//	if err != nil {
+//		logrus.Errorf("Error getting photo url")
+//		return
+//	}
+//	c.JSON(http.StatusOK, gin.H{
+//		"url": photoUrl.Url,
+//	})
+//}
 
 //No need
 func (s Service) GetPhotoById(c *gin.Context) {
@@ -257,4 +285,12 @@ func (s Service) TestSession(c *gin.Context) {
 	accessToken, _ := sess.Get("flickr_access_token")
 	accessTokenSecret, _ := sess.Get("flickr_access_secret")
 	c.String(http.StatusFound, fmt.Sprintf("Success generate token: %v  --- %v", accessToken, accessTokenSecret))
+}
+
+func GetDB() *gorm.DB {
+	sv := cli.MigrateService{
+		Context: context.Background(),
+	}
+	sv.Init()
+	return sv.GormDB
 }

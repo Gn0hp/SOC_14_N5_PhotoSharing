@@ -4,6 +4,7 @@ import (
 	"SOC_N5_14_BTL/internal/entities"
 	"SOC_N5_14_BTL/internal/services"
 	"SOC_N5_14_BTL/internal/services/databases/mysql"
+	"context"
 	"encoding/json"
 	"github.com/sirupsen/logrus"
 	"github.com/spf13/viper"
@@ -12,7 +13,8 @@ import (
 
 type MigrateService struct {
 	services.DefaultService
-	gormDB *gorm.DB
+	Context context.Context
+	GormDB  *gorm.DB
 }
 
 func Migrate() {
@@ -20,11 +22,9 @@ func Migrate() {
 	migrateService.Init()
 
 	tables := []interface{}{
-		entities.Photo{},
-		entities.User{},
-		entities.Photoset{},
+		entities.PhotoIdUrlMapping{},
 	}
-	err := migrateService.gormDB.AutoMigrate(tables...)
+	err := migrateService.GormDB.AutoMigrate(tables...)
 	if err != nil {
 		logrus.Errorf("Error migrate to database: %v", err)
 		return
@@ -43,5 +43,5 @@ func (m *MigrateService) Init() {
 	if err != nil {
 		panic(err)
 	}
-	m.gormDB = gormDb
+	m.GormDB = gormDb
 }

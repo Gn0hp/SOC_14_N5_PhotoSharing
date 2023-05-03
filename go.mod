@@ -6,7 +6,6 @@ require (
 	github.com/dghubble/oauth1 v0.7.2
 	github.com/gin-gonic/gin v1.9.0
 	github.com/go-session/session/v3 v3.2.1
-	github.com/golang/glog v1.1.1
 	github.com/joho/godotenv v1.5.1
 	github.com/sirupsen/logrus v1.9.0
 	github.com/spf13/viper v1.15.0

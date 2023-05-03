@@ -112,3 +112,8 @@ type PhotoURLResponse struct {
 	Url    string `xml:"url,attr" json:"Url"`
 	Media  string `xml:"media,attr" json:"Media"`
 }
+type PhotoIdUrlMapping struct {
+	DefaultModel
+	ImgId string `json:"img_id"`
+	Url   string `json:"url"`
+}

@@ -3,14 +3,14 @@ package utils
 import (
 	"SOC_N5_14_BTL/internal/constants"
 	"encoding/base64"
-	"github.com/golang/glog"
+	"log"
 	"math/rand"
 )
 
 func RandToken() string {
 	b := make([]byte, 32)
 	if _, err := rand.Read(b); err != nil {
-		glog.Fatalf("[Gin-OAuth] Failed to read rand: %v", err)
+		log.Fatalf("[Gin-OAuth] Failed to read rand: %v", err)
 	}
 	return base64.StdEncoding.EncodeToString(b)
 }
