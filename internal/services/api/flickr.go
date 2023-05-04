@@ -154,9 +154,8 @@ func (s Service) FlickrUploadImage(c *gin.Context) {
 		Id string `json:"id"`
 	}
 	var res []IdJson
-	var saveDbInBatch []entities.PhotoIdUrlMapping
 	db := GetDB()
-	for _, photo := range resp.Photo {
+	for index, photo := range resp.Photo {
 		if contain(uploadedPhotoId, photo.Id) {
 			newId := IdJson{
 				Id: photo.Id,
@@ -165,12 +164,11 @@ func (s Service) FlickrUploadImage(c *gin.Context) {
 				ImgId: photo.Id,
 				Url:   photo.UrlO,
 			}
-			saveDbInBatch = append(saveDbInBatch, entitiesSaveDb)
+			result := db.Create(&entitiesSaveDb)
+			if result.Error != nil {
+				logrus.Errorf("Error while saving image index %d url to database : %v", index, err)
+			}
 			res = append(res, newId)
-		}
-		err := db.CreateInBatches(saveDbInBatch, 10)
-		if err != nil {
-			logrus.Errorf("Error while saving image url to database : %v", err)
 		}
 	}
 	c.JSON(http.StatusOK, gin.H{"response": &res})

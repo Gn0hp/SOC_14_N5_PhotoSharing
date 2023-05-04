@@ -1,8 +1,8 @@
 [database]
-host="mysql"
+host="localhost"
 port=3306
-user="dev"
-password="12345678"
+user="gn0hp"
+password="@Pt103682912"
 name="dev"
 
 [server]
