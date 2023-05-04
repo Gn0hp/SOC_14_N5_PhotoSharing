@@ -69,8 +69,9 @@ func Setup() *gin.Engine {
 			})
 			photosetEp.POST("/create", srv.CreatePhotoset)
 			photosetEp.POST("/addToPhotoset", srv.AddPhotosToPhotoset)
-			photosetEp.POST("removeFromPhotoset", srv.RemovePhotosFromPhotoset)
-
+			photosetEp.POST("/removeFromPhotoset", srv.RemovePhotosFromPhotoset)
+			photosetEp.GET("/getByUserid", srv.GetPhotosetsByUserId)
+			photosetEp.GET("/getPhotoByPhotosetId", srv.GetPhotoByPhotosetId)
 		}
 	}
 	googleAuth := r.Group("/auth/google")

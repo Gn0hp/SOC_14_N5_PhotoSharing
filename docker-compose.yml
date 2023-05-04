@@ -45,6 +45,8 @@ services:
 #        target: /app/config
     command:
       - ./app
+    networks:
+      - default
 networks:
   host:
 volumes:

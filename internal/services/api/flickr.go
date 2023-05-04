@@ -155,7 +155,7 @@ func (s Service) FlickrUploadImage(c *gin.Context) {
 	}
 	var res []IdJson
 	var saveDbInBatch []entities.PhotoIdUrlMapping
-	//db := GetDB()
+	db := GetDB()
 	for _, photo := range resp.Photo {
 		if contain(uploadedPhotoId, photo.Id) {
 			newId := IdJson{
@@ -168,10 +168,10 @@ func (s Service) FlickrUploadImage(c *gin.Context) {
 			saveDbInBatch = append(saveDbInBatch, entitiesSaveDb)
 			res = append(res, newId)
 		}
-		//err := db.CreateInBatches(saveDbInBatch, 10)
-		//if err != nil {
-		//	logrus.Errorf("Error while saving image url to database : %v", err)
-		//}
+		err := db.CreateInBatches(saveDbInBatch, 10)
+		if err != nil {
+			logrus.Errorf("Error while saving image url to database : %v", err)
+		}
 	}
 	c.JSON(http.StatusOK, gin.H{"response": &res})
 }
@@ -187,21 +187,20 @@ func (s Service) UploadPost(c *gin.Context) {
 
 }
 
-//func (s Service) GetPhotoUrlById(c *gin.Context) {
-//	id := c.Query("photo_id")
-//	var photoUrl entities.PhotoIdUrlMapping
-//	db := GetDB()
-//	err := db.Where("img_id = ?", id).First(&photoUrl)
-//	if err != nil {
-//		logrus.Errorf("Error getting photo url")
-//		return
-//	}
-//	c.JSON(http.StatusOK, gin.H{
-//		"url": photoUrl.Url,
-//	})
-//}
+func (s Service) GetPhotoUrlById(c *gin.Context) {
+	id := c.Query("photo_id")
+	var photoUrl entities.PhotoIdUrlMapping
+	db := GetDB()
+	err := db.Where("img_id = ?", id).First(&photoUrl)
+	if err != nil {
+		logrus.Errorf("Error getting photo url")
+		return
+	}
+	c.JSON(http.StatusOK, gin.H{
+		"url": photoUrl.Url,
+	})
+}
 
-//No need
 func (s Service) GetPhotoById(c *gin.Context) {
 	id := c.Query("photo_id")
 
@@ -211,21 +210,16 @@ func (s Service) GetPhotoById(c *gin.Context) {
 	if err != nil {
 		return
 	}
-	type PhotoAccessArr struct {
-		Response []entities.PhotoURLResponse `json:"Response"`
-	}
-	var resJson PhotoAccessArr
+	photoURL := res.Sizes[0].Url
 	for _, photo := range res.Sizes {
-		resJson.Response = append(resJson.Response, entities.PhotoURLResponse{
-			Label:  photo.Label,
-			Width:  photo.Width,
-			Height: photo.Height,
-			Source: photo.Source,
-			Url:    photo.Url,
-			Media:  photo.Media,
-		})
+		if photo.Label == "Original" {
+			photoURL = photo.Source
+			break
+		}
 	}
-	c.JSON(http.StatusOK, resJson)
+	c.JSON(http.StatusOK, gin.H{
+		"url": photoURL,
+	})
 }
 func (s Service) GetPhotoByUserId(c *gin.Context) {
 	repo := flickr_repo.New(c)
@@ -279,7 +273,78 @@ func (s Service) RemovePhotosFromPhotoset(c *gin.Context) {
 	}
 	c.String(http.StatusOK, fmt.Sprint("Successfully"))
 }
+func (s Service) GetPhotosetsByUserId(c *gin.Context) {
+	reqToken, _ := c.Cookie("flickr_request_token")
+	reqTokenSecret, _ := c.Cookie("flickr_request_token_secret")
+	accessToken, _ := c.Cookie("flickr_access_token")
+	accessTokenSecret, _ := c.Cookie("flickr_access_secret")
+	repo := flickr_repo.NewWithCookie(reqToken, reqTokenSecret, accessToken, accessTokenSecret)
+	userId, _ := c.Cookie("flickr_user_id")
+	page := 1
+	res, err := repo.GetPhotoSets(userId, page)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, fmt.Sprintf("Cannot get photosets by userId %s caused by: %v", userId, err))
+		return
+	}
+	type JsonPhotosetListResponse struct {
+		Response []entities.Photoset `json:"response"`
+	}
+	var resJson JsonPhotosetListResponse
+	for _, photoset := range res.Photosets.Items {
+		resJson.Response = append(resJson.Response, entities.Photoset{
+			Id:                photoset.Id,
+			Primary:           photoset.Primary,
+			Secret:            photoset.Secret,
+			Server:            photoset.Server,
+			Farm:              photoset.Farm,
+			Photos:            photoset.Photos,
+			Videos:            photoset.Videos,
+			NeedsInterstitial: photoset.NeedsInterstitial,
+			VisCanSeeSet:      photoset.VisCanSeeSet,
+			CountViews:        photoset.CountViews,
+			CountComments:     photoset.CountComments,
+			CanComment:        photoset.CanComment,
+			DateCreate:        photoset.DateCreate,
+			DateUpdate:        photoset.DateUpdate,
+			Title:             photoset.Title,
+			Description:       photoset.Description,
+			Url:               photoset.Url,
+			Owner:             photoset.Owner,
+		})
+	}
+	c.JSON(http.StatusOK, resJson)
 
+}
+func (s Service) GetPhotoByPhotosetId(c *gin.Context) {
+	reqToken, _ := c.Cookie("flickr_request_token")
+	reqTokenSecret, _ := c.Cookie("flickr_request_token_secret")
+	accessToken, _ := c.Cookie("flickr_access_token")
+	accessTokenSecret, _ := c.Cookie("flickr_access_secret")
+	repo := flickr_repo.NewWithCookie(reqToken, reqTokenSecret, accessToken, accessTokenSecret)
+	userId, _ := c.Cookie("flickr_user_id")
+	photosetId := c.Query("photoset_id")
+	res, err := repo.GetPhotoByPhotoset(photosetId, userId)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, fmt.Sprintf("Cannot get photo of photosetId %s by userId %s caused by: %v", photosetId, userId, err))
+		return
+	}
+	type JsonPhotosetListResponse struct {
+		Response []entities.PhotoListPhotosetResponse `json:"response"`
+	}
+	var resJson JsonPhotosetListResponse
+	db := GetDB()
+	for _, photo := range res.Photoset.Photos {
+		var urlImg entities.PhotoIdUrlMapping
+		db.Model(&entities.PhotoIdUrlMapping{}).First(&urlImg).
+			Where("img_id = ?", photo.Id)
+		resJson.Response = append(resJson.Response, entities.PhotoListPhotosetResponse{
+			Id:    photo.Id,
+			Title: photo.Title,
+			URL:   urlImg.Url,
+		})
+	}
+	c.JSON(http.StatusOK, resJson)
+}
 func (s Service) TestSession(c *gin.Context) {
 	sess, _ := session.Start(c, c.Writer, c.Request)
 	accessToken, _ := sess.Get("flickr_access_token")

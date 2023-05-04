@@ -117,3 +117,8 @@ type PhotoIdUrlMapping struct {
 	ImgId string `json:"img_id"`
 	Url   string `json:"url"`
 }
+type PhotoListPhotosetResponse struct {
+	Id    string `xml:"id,attr" json:"Id"`
+	Title string `xml:"title,attr" json:"Title"`
+	URL   string `xml:"url,attr" json:"URL"`
+}
